@@ -1,6 +1,9 @@
 import javax.sound.sampled.*;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+import javax.swing.plaf.ColorUIResource;
+import javax.swing.plaf.metal.DefaultMetalTheme;
+import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,6 +18,8 @@ public class DesktopTimer extends JFrame implements ActionListener {
     private static JTextField[] hourField, minuteField, secondField;
     private static JButton[] startButton, stopButton, resetButton;
 
+    private final static Color gray = new Color(204, 204, 204);
+
     // ---------- タイマー ----------
     private static int[] startTime, startHour, startMinute, startSecond;
     private static int[] currentTime, currentHour, currentMinute, currentSecond;
@@ -25,10 +30,11 @@ public class DesktopTimer extends JFrame implements ActionListener {
         init();
 
         DesktopTimer desktopTimer = new DesktopTimer();
-        desktopTimer.setSize(400, 300);
-        desktopTimer.setVisible(true);
+        desktopTimer.setSize(400, 250);
         desktopTimer.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         desktopTimer.setResizable(false);
+        desktopTimer.setTitle("Desktop Timer");
+        desktopTimer.setVisible(true);
 
         Container contentPane = desktopTimer.getContentPane();
         contentPane.add(mainPanel);
@@ -39,28 +45,57 @@ public class DesktopTimer extends JFrame implements ActionListener {
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.PAGE_AXIS));
 
         hourBorder = new TitledBorder("hour");
+        hourBorder.setTitleColor(gray);
+        hourBorder.setTitleFont(new Font(Font.SERIF, Font.PLAIN, 12));
         minuteBorder = new TitledBorder("min");
+        minuteBorder.setTitleColor(gray);
+        minuteBorder.setTitleFont(new Font(Font.SERIF, Font.PLAIN, 12));
         secondBorder = new TitledBorder("sec");
+        secondBorder.setTitleColor(gray);
+        secondBorder.setTitleFont(new Font(Font.SERIF, Font.PLAIN, 12));
 
         for (int i = 0; i < n; i++) {
             panel[i] = new JPanel();
+            panel[i].setBackground(new Color(0, 25, 101));
 
+            // ---------- テキストフィールド ----------
             hourField[i] = new JTextField();
             hourField[i].setBorder(hourBorder);
             hourField[i].setPreferredSize(new Dimension(50, 50));
+            hourField[i].setBackground(new Color(0, 12, 50));
+            // 文字に関する設定
+            hourField[i].setForeground(gray);
+            hourField[i].setFont(new Font(Font.SERIF, Font.PLAIN, 30));
+            hourField[i].setHorizontalAlignment(JTextField.CENTER);
+            hourField[i].setCaretColor(gray);
 
             minuteField[i] = new JTextField();
             minuteField[i].setBorder(minuteBorder);
             minuteField[i].setPreferredSize(new Dimension(50, 50));
+            minuteField[i].setBackground(new Color(0, 12, 50));
+            // 文字に関する設定
+            minuteField[i].setForeground(gray);
+            minuteField[i].setFont(new Font(Font.SERIF, Font.PLAIN, 30));
+            minuteField[i].setHorizontalAlignment(JTextField.CENTER);
+            minuteField[i].setCaretColor(gray);
 
             secondField[i] = new JTextField();
             secondField[i].setBorder(secondBorder);
             secondField[i].setPreferredSize(new Dimension(50, 50));
+            secondField[i].setBackground(new Color(0, 12, 50));
+            // 文字に関する設定
+            secondField[i].setForeground(gray);
+            secondField[i].setFont(new Font(Font.SERIF, Font.PLAIN, 30));
+            secondField[i].setHorizontalAlignment(JTextField.CENTER);
+            secondField[i].setCaretColor(gray);
 
+            // ---------- ボタン ----------
             startButton[i] = new JButton("start");
             startButton[i].addActionListener(this);
+
             stopButton[i] = new JButton("stop");
             stopButton[i].addActionListener(this);
+
             resetButton[i] = new JButton("reset");
             resetButton[i].addActionListener(this);
 
@@ -128,10 +163,10 @@ public class DesktopTimer extends JFrame implements ActionListener {
 
                 timer[i].stop();
             } else if (pushedButton == resetButton[i]) {
-                currentTime[i] = startTime[i];
                 currentHour[i] = startHour[i];
                 currentMinute[i] = startMinute[i];
                 currentSecond[i] = startSecond[i];
+                currentTime[i] = startTime[i];
 
                 hourField[i].setText(String.valueOf(currentHour[i]));
                 minuteField[i].setText(String.valueOf(currentMinute[i]));
@@ -140,6 +175,8 @@ public class DesktopTimer extends JFrame implements ActionListener {
                 hourField[i].setEditable(true);
                 minuteField[i].setEditable(true);
                 secondField[i].setEditable(true);
+
+                timer[i].stop();
             } else if (e.getSource() == timer[i]) {
                 currentTime[i]--;
                 currentHour[i] = currentTime[i] / 3600;
