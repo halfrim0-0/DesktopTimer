@@ -141,6 +141,11 @@ public class DesktopTimer extends JFrame implements ActionListener {
         Object pushedButton = e.getSource();
         for (int i = 0; i < n; i++) {
             if (pushedButton == startButton[i]) {
+                if (hourField[i].getText().equals("") || minuteField[i].getText().equals("") || secondField[i].getText().equals("")) {
+                    return;
+                } else if (hourField[i].getText().equals("0") && minuteField[i].getText().equals("0") && secondField[i].getText().equals("0")) {
+                    return;
+                }
                 startHour[i] = Integer.parseInt(hourField[i].getText());
                 startMinute[i] = Integer.parseInt(minuteField[i].getText());
                 startSecond[i] = Integer.parseInt(secondField[i].getText());
