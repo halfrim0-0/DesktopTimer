@@ -1,8 +1,11 @@
+import javax.sound.sampled.*;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.IOException;
 
 public class DesktopTimer extends JFrame implements ActionListener {
     // ---------- GUI ----------
@@ -155,7 +158,34 @@ public class DesktopTimer extends JFrame implements ActionListener {
                     hourField[i].setEditable(true);
                     minuteField[i].setEditable(true);
                     secondField[i].setEditable(true);
+
+                    alert();
                 }
+            }
+        }
+    }
+
+    private void alert() {
+        AudioInputStream ais = null;
+        try {
+            ais = AudioSystem.getAudioInputStream(new File("alarm.wav"));
+            AudioFormat af = ais.getFormat();
+            DataLine.Info info = new DataLine.Info(Clip.class, af);
+            Clip clip = (Clip) AudioSystem.getLine(info);
+            clip.open(ais);
+            clip.loop(0);
+            clip.flush();
+        } catch (UnsupportedAudioFileException ufe) {
+            System.err.println(ufe);
+        } catch (IOException ioe) {
+            System.err.println(ioe);
+        } catch (LineUnavailableException lue) {
+            System.err.println(lue);
+        } finally {
+            try {
+                ais.close();
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
             }
         }
     }
