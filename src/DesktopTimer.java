@@ -39,7 +39,7 @@ public class DesktopTimer extends JFrame implements ActionListener {
         minuteBorder = new TitledBorder("min");
         secondBorder = new TitledBorder("sec");
 
-        for (int i = 0; i < n; i ++) {
+        for (int i = 0; i < n; i++) {
             panel[i] = new JPanel();
 
             hourField[i] = new JTextField();
@@ -101,7 +101,7 @@ public class DesktopTimer extends JFrame implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         Object pushedButton = e.getSource();
-        for (int i = 0; i < n; i ++) {
+        for (int i = 0; i < n; i++) {
             if (pushedButton == startButton[i]) {
                 startHour[i] = Integer.parseInt(hourField[i].getText());
                 startMinute[i] = Integer.parseInt(minuteField[i].getText());
@@ -138,7 +138,7 @@ public class DesktopTimer extends JFrame implements ActionListener {
                 minuteField[i].setEditable(true);
                 secondField[i].setEditable(true);
             } else if (e.getSource() == timer[i]) {
-                currentTime[i] --;
+                currentTime[i]--;
                 currentHour[i] = currentTime[i] / 3600;
                 currentTime[i] %= 3600;
                 currentMinute[i] = currentTime[i] / 60;
@@ -149,6 +149,13 @@ public class DesktopTimer extends JFrame implements ActionListener {
                 hourField[i].setText(String.valueOf(currentHour[i]));
                 minuteField[i].setText(String.valueOf(currentMinute[i]));
                 secondField[i].setText(String.valueOf(currentSecond[i]));
+
+                if (currentTime[i] == 0) {
+                    timer[i].stop();
+                    hourField[i].setEditable(true);
+                    minuteField[i].setEditable(true);
+                    secondField[i].setEditable(true);
+                }
             }
         }
     }
