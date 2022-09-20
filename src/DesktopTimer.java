@@ -1,6 +1,9 @@
 import javax.sound.sampled.*;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+import javax.swing.plaf.ColorUIResource;
+import javax.swing.plaf.metal.DefaultMetalTheme;
+import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,65 +18,41 @@ public class DesktopTimer extends JFrame implements ActionListener {
     private static JTextField[] hourField, minuteField, secondField;
     private static JButton[] startButton, stopButton, resetButton;
 
+    private final static Color gray = new Color(204, 204, 204);
+    private final static Color blue = new Color(0, 25, 101);
+    private final static Color deepBlue = new Color(0, 12, 50);
+
     // ---------- タイマー ----------
     private static int[] startTime, startHour, startMinute, startSecond;
     private static int[] currentTime, currentHour, currentMinute, currentSecond;
+    private static boolean[] hasStopped;
     private static Timer[] timer;
     final private static int n = 3;
 
     public static void main(String[] args) {
         init();
-
         DesktopTimer desktopTimer = new DesktopTimer();
-        desktopTimer.setSize(400, 300);
-        desktopTimer.setVisible(true);
-        desktopTimer.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        desktopTimer.setResizable(false);
-
-        Container contentPane = desktopTimer.getContentPane();
-        contentPane.add(mainPanel);
+        desktopTimer.decorateFrame();
     }
 
     public DesktopTimer() {
         mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.PAGE_AXIS));
+        decorateMainPanel();
+    }
 
-        hourBorder = new TitledBorder("hour");
-        minuteBorder = new TitledBorder("min");
-        secondBorder = new TitledBorder("sec");
-
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        Object pushedButton = e.getSource();
         for (int i = 0; i < n; i++) {
-            panel[i] = new JPanel();
-
-            hourField[i] = new JTextField();
-            hourField[i].setBorder(hourBorder);
-            hourField[i].setPreferredSize(new Dimension(50, 50));
-
-            minuteField[i] = new JTextField();
-            minuteField[i].setBorder(minuteBorder);
-            minuteField[i].setPreferredSize(new Dimension(50, 50));
-
-            secondField[i] = new JTextField();
-            secondField[i].setBorder(secondBorder);
-            secondField[i].setPreferredSize(new Dimension(50, 50));
-
-            startButton[i] = new JButton("start");
-            startButton[i].addActionListener(this);
-            stopButton[i] = new JButton("stop");
-            stopButton[i].addActionListener(this);
-            resetButton[i] = new JButton("reset");
-            resetButton[i].addActionListener(this);
-
-            panel[i].add(hourField[i]);
-            panel[i].add(minuteField[i]);
-            panel[i].add(secondField[i]);
-            panel[i].add(startButton[i]);
-            panel[i].add(stopButton[i]);
-            panel[i].add(resetButton[i]);
-
-            timer[i] = new Timer(1000, this);
-
-            mainPanel.add(panel[i]);
+            if (pushedButton == startButton[i]) {
+                start(i);
+            } else if (pushedButton == stopButton[i]) {
+                stop(i);
+            } else if (pushedButton == resetButton[i]) {
+                reset(i);
+            } else if (e.getSource() == timer[i]) {
+                run(i);
+            }
         }
     }
 
@@ -98,71 +77,196 @@ public class DesktopTimer extends JFrame implements ActionListener {
         currentMinute = new int[n];
         currentSecond = new int[n];
 
+        hasStopped = new boolean[n];
+
         timer = new Timer[n];
     }
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        Object pushedButton = e.getSource();
+    private void decorateFrame() {
+        this.setSize(400, 250);
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setResizable(false);
+        this.setTitle("Desktop Timer");
+        this.setVisible(true);
+
+        Container contentPane = this.getContentPane();
+        contentPane.add(mainPanel);
+    }
+
+    private void decorateMainPanel() {
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.PAGE_AXIS));
+
+        createBorder();
+
         for (int i = 0; i < n; i++) {
-            if (pushedButton == startButton[i]) {
-                startHour[i] = Integer.parseInt(hourField[i].getText());
-                startMinute[i] = Integer.parseInt(minuteField[i].getText());
-                startSecond[i] = Integer.parseInt(secondField[i].getText());
-                startTime[i] = startHour[i] * 3600 + startMinute[i] * 60 + startSecond[i];
+            createField(i);
+            createButton(i);
+            addToPanel(i);
 
-                currentHour[i] = startHour[i];
-                currentMinute[i] = startMinute[i];
-                currentSecond[i] = startSecond[i];
-                currentTime[i] = startTime[i];
+            hasStopped[i] = false;
 
-                hourField[i].setEditable(false);
-                minuteField[i].setEditable(false);
-                secondField[i].setEditable(false);
+            timer[i] = new Timer(1000, this);
 
-                timer[i].start();
-            } else if (pushedButton == stopButton[i]) {
-                hourField[i].setEditable(true);
-                minuteField[i].setEditable(true);
-                secondField[i].setEditable(true);
-
-                timer[i].stop();
-            } else if (pushedButton == resetButton[i]) {
-                currentTime[i] = startTime[i];
-                currentHour[i] = startHour[i];
-                currentMinute[i] = startMinute[i];
-                currentSecond[i] = startSecond[i];
-
-                hourField[i].setText(String.valueOf(currentHour[i]));
-                minuteField[i].setText(String.valueOf(currentMinute[i]));
-                secondField[i].setText(String.valueOf(currentSecond[i]));
-
-                hourField[i].setEditable(true);
-                minuteField[i].setEditable(true);
-                secondField[i].setEditable(true);
-            } else if (e.getSource() == timer[i]) {
-                currentTime[i]--;
-                currentHour[i] = currentTime[i] / 3600;
-                currentTime[i] %= 3600;
-                currentMinute[i] = currentTime[i] / 60;
-                currentTime[i] %= 60;
-                currentSecond[i] = currentTime[i];
-                currentTime[i] = currentHour[i] * 3600 + currentMinute[i] * 60 + currentSecond[i];
-
-                hourField[i].setText(String.valueOf(currentHour[i]));
-                minuteField[i].setText(String.valueOf(currentMinute[i]));
-                secondField[i].setText(String.valueOf(currentSecond[i]));
-
-                if (currentTime[i] == 0) {
-                    timer[i].stop();
-                    hourField[i].setEditable(true);
-                    minuteField[i].setEditable(true);
-                    secondField[i].setEditable(true);
-
-                    alert();
-                }
-            }
+            mainPanel.add(panel[i]);
         }
+    }
+
+    private void addToPanel(int index) {
+        panel[index] = new JPanel();
+        panel[index].setBackground(blue);
+
+        panel[index].add(hourField[index]);
+        panel[index].add(minuteField[index]);
+        panel[index].add(secondField[index]);
+        panel[index].add(startButton[index]);
+        panel[index].add(stopButton[index]);
+        panel[index].add(resetButton[index]);
+    }
+
+    private void createBorder() {
+        hourBorder = new TitledBorder("hour");
+        decorateBorder(hourBorder);
+
+        minuteBorder = new TitledBorder("min");
+        decorateBorder(minuteBorder);
+
+        secondBorder = new TitledBorder("sec");
+        decorateBorder(secondBorder);
+    }
+
+    private void decorateBorder(TitledBorder border) {
+        border.setTitleColor(gray);
+        border.setTitleColor(gray);
+        border.setTitleFont(new Font(Font.SERIF, Font.PLAIN, 12));
+    }
+
+    private void createField(int index) {
+        hourField[index] = new JTextField();
+        decorateField(hourField[index], hourBorder);
+
+        minuteField[index] = new JTextField();
+        decorateField(minuteField[index], minuteBorder);
+
+        secondField[index] = new JTextField();
+        decorateField(secondField[index], secondBorder);
+    }
+
+    private void decorateField(JTextField textField, TitledBorder border) {
+        textField.setBorder(border);
+        textField.setPreferredSize(new Dimension(50, 50));
+        textField.setBackground(deepBlue);
+
+        // 文字に関する設定
+        textField.setForeground(gray);
+        textField.setFont(new Font(Font.SERIF, Font.PLAIN, 30));
+        textField.setHorizontalAlignment(JTextField.CENTER);
+        textField.setCaretColor(gray);
+    }
+
+    private void createButton(int index) {
+        startButton[index] = new JButton("start");
+        startButton[index].addActionListener(this);
+
+        stopButton[index] = new JButton("stop");
+        stopButton[index].addActionListener(this);
+
+        resetButton[index] = new JButton("reset");
+        resetButton[index].addActionListener(this);
+    }
+
+    private void start(int index) {
+        if (!isProper(index)) {
+            return;
+        }
+
+        setCurrentTime(index);
+        if (!hasStopped[index]) {
+            setStartTime(index);
+        }
+        setFieldEditable(index, false);
+
+        timer[index].start();
+    }
+
+    private void stop(int index) {
+        setFieldEditable(index,true);
+
+        hasStopped[index] = true;
+        timer[index].stop();
+    }
+
+    private void reset(int index) {
+        resetCurrentTime(index);
+        formatTime(index);
+        setTimeToField(index);
+        setFieldEditable(index, true);
+
+        hasStopped[index] = false;
+        timer[index].stop();
+    }
+
+    private void run(int index) {
+        currentTime[index]--;
+        formatTime(index);
+        setTimeToField(index);
+
+        if (currentTime[index] == 0) {
+            timer[index].stop();
+            setFieldEditable(index, true);
+            alert();
+        }
+    }
+
+    private boolean isProper(int index) {
+        if (hourField[index].getText().equals("") || minuteField[index].getText().equals("") || secondField[index].getText().equals("")) {
+            return false;
+        } else if (hourField[index].getText().equals("0") && minuteField[index].getText().equals("0") && secondField[index].getText().equals("0")) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private void formatTime(int index) {
+        currentHour[index] = currentTime[index] / 3600;
+        currentTime[index] %= 3600;
+        currentMinute[index] = currentTime[index] / 60;
+        currentTime[index] %= 60;
+        currentSecond[index] = currentTime[index];
+        currentTime[index] = currentHour[index] * 3600 + currentMinute[index] * 60 + currentSecond[index];
+    }
+
+    private void setStartTime(int index) {
+        startHour[index] = currentHour[index];
+        startMinute[index] = currentMinute[index];
+        startSecond[index] = currentSecond[index];
+        startTime[index] = currentTime[index];
+    }
+
+    private void setCurrentTime(int index) {
+        currentHour[index] = Integer.parseInt(hourField[index].getText());
+        currentMinute[index] = Integer.parseInt(minuteField[index].getText());
+        currentSecond[index] = Integer.parseInt(secondField[index].getText());
+        currentTime[index] = currentHour[index] * 3600 + currentMinute[index] * 60 + currentSecond[index];
+    }
+
+    private void resetCurrentTime(int index) {
+        currentHour[index] = startHour[index];
+        currentMinute[index] = startMinute[index];
+        currentSecond[index] = startSecond[index];
+        currentTime[index] = startTime[index];
+    }
+
+    private void setTimeToField(int index) {
+        hourField[index].setText(String.valueOf(currentHour[index]));
+        minuteField[index].setText(String.valueOf(currentMinute[index]));
+        secondField[index].setText(String.valueOf(currentSecond[index]));
+    }
+
+    private void setFieldEditable(int index, boolean isEditable) {
+        hourField[index].setEditable(isEditable);
+        minuteField[index].setEditable(isEditable);
+        secondField[index].setEditable(isEditable);
     }
 
     private void alert() {
