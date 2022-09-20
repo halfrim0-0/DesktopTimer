@@ -23,6 +23,7 @@ public class DesktopTimer extends JFrame implements ActionListener {
     // ---------- タイマー ----------
     private static int[] startTime, startHour, startMinute, startSecond;
     private static int[] currentTime, currentHour, currentMinute, currentSecond;
+    private static boolean[] isStopped;
     private static Timer[] timer;
     final private static int n = 3;
 
@@ -106,6 +107,8 @@ public class DesktopTimer extends JFrame implements ActionListener {
             panel[i].add(stopButton[i]);
             panel[i].add(resetButton[i]);
 
+            isStopped[i] = false;
+
             timer[i] = new Timer(1000, this);
 
             mainPanel.add(panel[i]);
@@ -133,6 +136,8 @@ public class DesktopTimer extends JFrame implements ActionListener {
         currentMinute = new int[n];
         currentSecond = new int[n];
 
+        isStopped = new boolean[n];
+
         timer = new Timer[n];
     }
 
@@ -146,15 +151,19 @@ public class DesktopTimer extends JFrame implements ActionListener {
                 } else if (hourField[i].getText().equals("0") && minuteField[i].getText().equals("0") && secondField[i].getText().equals("0")) {
                     return;
                 }
-                startHour[i] = Integer.parseInt(hourField[i].getText());
-                startMinute[i] = Integer.parseInt(minuteField[i].getText());
-                startSecond[i] = Integer.parseInt(secondField[i].getText());
-                startTime[i] = startHour[i] * 3600 + startMinute[i] * 60 + startSecond[i];
 
-                currentHour[i] = startHour[i];
-                currentMinute[i] = startMinute[i];
-                currentSecond[i] = startSecond[i];
-                currentTime[i] = startTime[i];
+
+                currentHour[i] = Integer.parseInt(hourField[i].getText());
+                currentMinute[i] = Integer.parseInt(minuteField[i].getText());
+                currentSecond[i] = Integer.parseInt(secondField[i].getText());
+                currentTime[i] = currentHour[i] * 3600 + currentMinute[i] * 60 + currentSecond[i];
+
+                if (!isStopped[i]) {
+                    startHour[i] = currentHour[i];
+                    startMinute[i] = currentMinute[i];
+                    startSecond[i] = currentSecond[i];
+                    startTime[i] = currentTime[i];
+                }
 
                 hourField[i].setEditable(false);
                 minuteField[i].setEditable(false);
@@ -162,12 +171,16 @@ public class DesktopTimer extends JFrame implements ActionListener {
 
                 timer[i].start();
             } else if (pushedButton == stopButton[i]) {
+                isStopped[i] = true;
+
                 hourField[i].setEditable(true);
                 minuteField[i].setEditable(true);
                 secondField[i].setEditable(true);
 
                 timer[i].stop();
             } else if (pushedButton == resetButton[i]) {
+                isStopped[i] = false;
+
                 currentHour[i] = startHour[i];
                 currentMinute[i] = startMinute[i];
                 currentSecond[i] = startSecond[i];
