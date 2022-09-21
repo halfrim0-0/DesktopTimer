@@ -1,22 +1,30 @@
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.tuple.Pair;
+
 import javax.sound.sampled.*;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
-import javax.swing.plaf.ColorUIResource;
-import javax.swing.plaf.metal.DefaultMetalTheme;
-import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
+import java.security.KeyPair;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DesktopTimer extends JFrame implements ActionListener {
     // ---------- GUI ----------
     private static JPanel mainPanel;
     private static JPanel[] panel;
+    private static DefaultComboBoxModel[] model;
+    private static JComboBox<String>[] comboBox;
+    private static Map<String, Pair<Integer, Integer>> enseiMap;
     private static TitledBorder hourBorder, minuteBorder, secondBorder;
     private static JTextField[] hourField, minuteField, secondField;
-    private static JButton[] startButton, stopButton, resetButton;
+    private static JButton[] selectButton, startButton, stopButton, resetButton;
 
     private final static Color gray = new Color(204, 204, 204);
     private final static Color blue = new Color(0, 25, 101);
@@ -38,13 +46,16 @@ public class DesktopTimer extends JFrame implements ActionListener {
     public DesktopTimer() {
         mainPanel = new JPanel();
         decorateMainPanel();
+        createEnseiMap();
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         Object pushedButton = e.getSource();
         for (int i = 0; i < n; i++) {
-            if (pushedButton == startButton[i]) {
+            if (pushedButton == selectButton[i]) {
+                select(i);
+            } else if (pushedButton == startButton[i]) {
                 start(i);
             } else if (pushedButton == stopButton[i]) {
                 stop(i);
@@ -59,10 +70,15 @@ public class DesktopTimer extends JFrame implements ActionListener {
     private static void init() {
         panel = new JPanel[n];
 
+        model = new DefaultComboBoxModel[n];
+        comboBox = new JComboBox[n];
+        enseiMap = new HashMap<String, Pair<Integer, Integer>>();
+
         hourField = new JTextField[n];
         minuteField = new JTextField[n];
         secondField = new JTextField[n];
 
+        selectButton = new JButton[n];
         startButton = new JButton[n];
         stopButton = new JButton[n];
         resetButton = new JButton[n];
@@ -83,7 +99,7 @@ public class DesktopTimer extends JFrame implements ActionListener {
     }
 
     private void decorateFrame() {
-        this.setSize(400, 250);
+        this.setSize(650, 250);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setResizable(false);
         this.setTitle("Desktop Timer");
@@ -99,6 +115,8 @@ public class DesktopTimer extends JFrame implements ActionListener {
         createBorder();
 
         for (int i = 0; i < n; i++) {
+            createModel(i);
+            createComboBox(i);
             createField(i);
             createButton(i);
             addToPanel(i);
@@ -111,10 +129,50 @@ public class DesktopTimer extends JFrame implements ActionListener {
         }
     }
 
+    private void createEnseiMap() {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode json = objectMapper.readTree(Paths.get("ensei.json").toFile());
+
+            int num = json.get("num").intValue();
+            for (int i = 0; i < num; i ++) {
+                String name = json.get("list").get(i).get("name").textValue();
+                int hour = Integer.parseInt(json.get("list").get(i).get("hour").textValue());
+                int minute = Integer.parseInt(json.get("list").get(i).get("minute").textValue());
+
+                enseiMap.put(name, Pair.of(hour, minute));
+            }
+        } catch (IOException ioe) {
+            System.err.println(ioe);
+        }
+    }
+
+    private void createComboBox(int index) {
+        comboBox[index] = new JComboBox<>(model[index]);
+    }
+
+    private void createModel(int index) {
+        model[index] = new DefaultComboBoxModel();
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode json = objectMapper.readTree(Paths.get("ensei.json").toFile());
+
+            int num = json.get("num").intValue();
+            for (int i = 0; i < num; i ++) {
+                String name = json.get("list").get(i).get("name").textValue();
+                model[index].addElement(name);
+            }
+        } catch (IOException ioe) {
+            System.err.println(ioe);
+        }
+    }
+
     private void addToPanel(int index) {
         panel[index] = new JPanel();
         panel[index].setBackground(blue);
 
+        panel[index].add(comboBox[index]);
+        panel[index].add(selectButton[index]);
         panel[index].add(hourField[index]);
         panel[index].add(minuteField[index]);
         panel[index].add(secondField[index]);
@@ -164,6 +222,9 @@ public class DesktopTimer extends JFrame implements ActionListener {
     }
 
     private void createButton(int index) {
+        selectButton[index] = new JButton("select");
+        selectButton[index].addActionListener(this);
+
         startButton[index] = new JButton("start");
         startButton[index].addActionListener(this);
 
@@ -172,6 +233,21 @@ public class DesktopTimer extends JFrame implements ActionListener {
 
         resetButton[index] = new JButton("reset");
         resetButton[index].addActionListener(this);
+    }
+
+    private void select(int index) {
+        String name = (String)comboBox[index].getSelectedItem();
+        int hour = enseiMap.get(name).getLeft();
+        int minute = enseiMap.get(name).getRight();
+
+        System.out.println(hour);
+        System.out.println(minute);
+
+        currentHour[index] = hour;
+        currentMinute[index] = minute;
+        currentSecond[index] = 0;
+        setStartTime(index);
+        setCurrentTimeToField(index);
     }
 
     private void start(int index) {
@@ -183,13 +259,13 @@ public class DesktopTimer extends JFrame implements ActionListener {
         if (!hasStopped[index]) {
             setStartTime(index);
         }
-        setFieldEditable(index, false);
+        setEnable(index, false);
 
         timer[index].start();
     }
 
     private void stop(int index) {
-        setFieldEditable(index,true);
+        setEnable(index,true);
 
         hasStopped[index] = true;
         timer[index].stop();
@@ -198,8 +274,8 @@ public class DesktopTimer extends JFrame implements ActionListener {
     private void reset(int index) {
         resetCurrentTime(index);
         formatTime(index);
-        setTimeToField(index);
-        setFieldEditable(index, true);
+        setCurrentTimeToField(index);
+        setEnable(index, true);
 
         hasStopped[index] = false;
         timer[index].stop();
@@ -208,11 +284,11 @@ public class DesktopTimer extends JFrame implements ActionListener {
     private void run(int index) {
         currentTime[index]--;
         formatTime(index);
-        setTimeToField(index);
+        setCurrentTimeToField(index);
 
         if (currentTime[index] == 0) {
             timer[index].stop();
-            setFieldEditable(index, true);
+            setEnable(index, true);
             alert();
         }
     }
@@ -257,16 +333,19 @@ public class DesktopTimer extends JFrame implements ActionListener {
         currentTime[index] = startTime[index];
     }
 
-    private void setTimeToField(int index) {
+    private void setCurrentTimeToField(int index) {
         hourField[index].setText(String.valueOf(currentHour[index]));
         minuteField[index].setText(String.valueOf(currentMinute[index]));
         secondField[index].setText(String.valueOf(currentSecond[index]));
     }
 
-    private void setFieldEditable(int index, boolean isEditable) {
-        hourField[index].setEditable(isEditable);
-        minuteField[index].setEditable(isEditable);
-        secondField[index].setEditable(isEditable);
+    private void setEnable(int index, boolean isEnable) {
+        comboBox[index].setEnabled(isEnable);
+        selectButton[index].setEnabled(isEnable);
+        hourField[index].setEditable(isEnable);
+        minuteField[index].setEditable(isEnable);
+        secondField[index].setEditable(isEnable);
+        startButton[index].setEnabled(isEnable);
     }
 
     private void alert() {
